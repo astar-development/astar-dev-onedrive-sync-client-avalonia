@@ -1,5 +1,6 @@
 namespace AStar.Dev.OneDrive.Sync.Client.Core.Features.DeltaProcessing;
 
+using System.Web;
 using Accounts.Models;
 using Models;
 
@@ -8,6 +9,8 @@ using Models;
 /// </summary>
 public class DeltaProcessor(IGraphDeltaClient graphClient, IDriveItemRepository driveItemRepository) : IDeltaProcessor
 {
+    private const int BatchSize = 50;
+    
     private readonly IGraphDeltaClient _graphClient = graphClient;
     private readonly IDriveItemRepository _driveItemRepository = driveItemRepository;
 
@@ -32,7 +35,7 @@ public class DeltaProcessor(IGraphDeltaClient graphClient, IDriveItemRepository 
 
         var response = await _graphClient.GetDeltaChangesAsync(account.Email, currentToken, cancellationToken);
 
-        var deduplicated = DeduplicateItems(response.Items);
+        var deduplicated = DeduplicateWithLastModifiedWins(response.Items);
 
         await PersistInBatchesAsync(account.Email, deduplicated, cancellationToken);
 
@@ -40,27 +43,23 @@ public class DeltaProcessor(IGraphDeltaClient graphClient, IDriveItemRepository 
         await _driveItemRepository.SaveDeltaTokenAsync(account.Email, newToken, cancellationToken);
     }
 
-    private static IReadOnlyList<DriveItemDto> DeduplicateItems(IReadOnlyList<DriveItemDto> items)
-    {
-        var grouped = items
+    private static IReadOnlyList<DriveItemDto> DeduplicateWithLastModifiedWins(IReadOnlyList<DriveItemDto> items)
+        => items
             .GroupBy(item => item.Id)
-            .Select(group => group.Count() == 1
-                ? group.First()
-                : group.OrderByDescending(item => item.LastModifiedUtc)
-                       .ThenBy(item => item.Id)
-                       .First())
+            .Select(SelectMostRecentItem)
             .ToList();
 
-        return grouped;
-    }
+    private static DriveItemDto SelectMostRecentItem(IGrouping<string, DriveItemDto> group)
+        => group
+            .OrderByDescending(item => item.LastModifiedUtc)
+            .ThenBy(item => item.Id)
+            .First();
 
     private async Task PersistInBatchesAsync(string accountEmail, IReadOnlyList<DriveItemDto> items, CancellationToken cancellationToken)
     {
-        const int batchSize = 50;
-        
-        for (var i = 0; i < items.Count; i += batchSize)
+        for (var i = 0; i < items.Count; i += BatchSize)
         {
-            var batch = items.Skip(i).Take(batchSize).ToList();
+            var batch = items.Skip(i).Take(BatchSize).ToList();
             await _driveItemRepository.SaveBatchAsync(accountEmail, batch, cancellationToken);
         }
     }
@@ -68,15 +67,14 @@ public class DeltaProcessor(IGraphDeltaClient graphClient, IDriveItemRepository 
     private static string ExtractTokenFromDeltaLink(string deltaLink)
     {
         var uri = new Uri(deltaLink);
-        var query = uri.Query;
-        var tokenParam = query.Split('&')
-            .FirstOrDefault(p => p.Contains("token=", StringComparison.OrdinalIgnoreCase));
+        var queryParams = HttpUtility.ParseQueryString(uri.Query);
+        var token = queryParams["token"];
 
-        if (tokenParam == null)
+        if (string.IsNullOrEmpty(token))
         {
             throw new InvalidOperationException($"Delta link does not contain a token: {deltaLink}");
         }
 
-        return tokenParam.Split('=')[1];
+        return token;
     }
 }

@@ -7,6 +7,8 @@ using Models;
 /// </summary>
 public class GraphDeltaClient(IGraphApiAdapter graphAdapter, TimeProvider timeProvider) : IGraphDeltaClient
 {
+    private const int MaxRetries = 5;
+    
     private readonly IGraphApiAdapter _graphAdapter = graphAdapter;
     private readonly TimeProvider _timeProvider = timeProvider;
 
@@ -18,9 +20,8 @@ public class GraphDeltaClient(IGraphApiAdapter graphAdapter, TimeProvider timePr
     public async Task<DeltaResponse> GetDeltaChangesAsync(string accountEmail, string deltaToken, CancellationToken cancellationToken = default)
         => await ExecuteWithRetryAsync(() => _graphAdapter.GetDeltaAsync(accountEmail, deltaToken, cancellationToken), cancellationToken);
 
-    private async Task<DeltaResponse> ExecuteWithRetryAsync(Func<Task<DeltaResponse>> operation, CancellationToken cancellationToken)
+    private static async Task<DeltaResponse> ExecuteWithRetryAsync(Func<Task<DeltaResponse>> operation, CancellationToken cancellationToken)
     {
-        const int maxRetries = 5;
         var attemptCount = 0;
 
         while (true)
@@ -29,11 +30,11 @@ public class GraphDeltaClient(IGraphApiAdapter graphAdapter, TimeProvider timePr
             {
                 return await operation();
             }
-            catch (GraphRateLimitException ex) when (attemptCount < maxRetries)
+            catch (GraphRateLimitException ex) when (attemptCount < MaxRetries)
             {
                 attemptCount++;
                 
-                if (attemptCount >= maxRetries)
+                if (attemptCount >= MaxRetries)
                 {
                     throw;
                 }
