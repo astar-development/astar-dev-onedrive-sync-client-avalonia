@@ -176,7 +176,7 @@ public class DeltaProcessorShould
         await _processor.ProcessIncrementalSyncAsync(account, CancellationToken.None);
 
 
-        await _driveItemRepository.Received(1).SaveBatchAsync(
+        await _driveItemRepository.Received(2).SaveBatchAsync(
             account.Email,
             Arg.Is<IReadOnlyList<DriveItemDto>>(batch => batch.Count == 50),
             Arg.Any<CancellationToken>());

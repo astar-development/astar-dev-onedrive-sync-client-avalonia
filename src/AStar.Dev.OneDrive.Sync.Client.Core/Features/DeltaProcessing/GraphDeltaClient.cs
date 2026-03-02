@@ -11,14 +11,37 @@ public class GraphDeltaClient(IGraphApiAdapter graphAdapter, TimeProvider timePr
     private readonly TimeProvider _timeProvider = timeProvider;
 
     /// <inheritdoc/>
-    public Task<DeltaResponse> GetInitialDeltaAsync(string accountEmail, CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
-    }
+    public async Task<DeltaResponse> GetInitialDeltaAsync(string accountEmail, CancellationToken cancellationToken = default)
+        => await ExecuteWithRetryAsync(() => _graphAdapter.GetDeltaAsync(accountEmail, null, cancellationToken), cancellationToken);
 
     /// <inheritdoc/>
-    public Task<DeltaResponse> GetDeltaChangesAsync(string accountEmail, string deltaToken, CancellationToken cancellationToken = default)
+    public async Task<DeltaResponse> GetDeltaChangesAsync(string accountEmail, string deltaToken, CancellationToken cancellationToken = default)
+        => await ExecuteWithRetryAsync(() => _graphAdapter.GetDeltaAsync(accountEmail, deltaToken, cancellationToken), cancellationToken);
+
+    private async Task<DeltaResponse> ExecuteWithRetryAsync(Func<Task<DeltaResponse>> operation, CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        const int maxRetries = 5;
+        var attemptCount = 0;
+
+        while (true)
+        {
+            try
+            {
+                return await operation();
+            }
+            catch (GraphRateLimitException ex) when (attemptCount < maxRetries)
+            {
+                attemptCount++;
+                
+                if (attemptCount >= maxRetries)
+                {
+                    throw;
+                }
+
+                var delay = ex.RetryAfter ?? TimeSpan.FromSeconds(Math.Pow(2, attemptCount));
+                
+                await Task.Delay(delay, cancellationToken);
+            }
+        }
     }
 }
