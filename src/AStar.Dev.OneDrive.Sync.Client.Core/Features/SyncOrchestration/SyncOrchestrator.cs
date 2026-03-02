@@ -8,31 +8,17 @@ using Models;
 /// <summary>
 /// Orchestrates serial execution of account sync operations and manages sync state for UI observation.
 /// </summary>
-public class SyncOrchestrator : ISyncOrchestrator
+public class SyncOrchestrator(IAccountRepository accountRepository, ISyncExecutor syncExecutor) : ISyncOrchestrator
 {
-    private readonly IAccountRepository _accountRepository;
-    private readonly ISyncExecutor _syncExecutor;
+    private readonly IAccountRepository _accountRepository = accountRepository;
+    private readonly ISyncExecutor _syncExecutor = syncExecutor;
     private readonly ConcurrentQueue<AccountId> _queue = new();
     private readonly ConcurrentDictionary<string, AccountSyncStatus> _statusMap = new();
     private readonly SemaphoreSlim _executionLock = new(1, 1);
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="SyncOrchestrator"/> class.
-    /// </summary>
-    /// <param name="accountRepository">Repository for account access.</param>
-    /// <param name="syncExecutor">Executor for performing sync operations.</param>
-    public SyncOrchestrator(
-        IAccountRepository accountRepository,
-        ISyncExecutor syncExecutor)
-    {
-        _accountRepository = accountRepository;
-        _syncExecutor = syncExecutor;
-    }
-
     /// <inheritdoc/>
     public Task EnqueueAccountAsync(AccountId accountId, CancellationToken cancellationToken = default)
     {
-        // Check if already queued or syncing
         if (_statusMap.TryGetValue(accountId.Email, out var currentStatus))
         {
             if (currentStatus.State == SyncState.Queued || currentStatus.State == SyncState.Syncing)

@@ -25,7 +25,7 @@ public class GraphDeltaClientShould
     [Fact]
     public async Task RetryOn429WithRetryAfterHeader()
     {
-        // Arrange
+
         var accountEmail = "test@example.com";
         var successResponse = new DeltaResponse
         {
@@ -46,10 +46,10 @@ public class GraphDeltaClientShould
                 return Task.FromResult(successResponse);
             });
 
-        // Act
+
         var result = await _client.GetInitialDeltaAsync(accountEmail, CancellationToken.None);
 
-        // Assert
+
         callCount.ShouldBe(2);
         result.DeltaLink.ShouldContain("success");
     }
@@ -57,7 +57,7 @@ public class GraphDeltaClientShould
     [Fact]
     public async Task UseExponentialBackoffWhenRetryAfterNotProvided()
     {
-        // Arrange
+
         var accountEmail = "test@example.com";
         var successResponse = new DeltaResponse
         {
@@ -78,10 +78,10 @@ public class GraphDeltaClientShould
                 return Task.FromResult(successResponse);
             });
 
-        // Act
+
         var result = await _client.GetInitialDeltaAsync(accountEmail, CancellationToken.None);
 
-        // Assert
+
         callCount.ShouldBe(3);
         result.DeltaLink.ShouldContain("success");
     }
@@ -89,7 +89,7 @@ public class GraphDeltaClientShould
     [Fact]
     public async Task FailAfterMaxRetryAttempts()
     {
-        // Arrange
+
         var accountEmail = "test@example.com";
 
         _graphAdapter.GetDeltaAsync(accountEmail, null, Arg.Any<CancellationToken>())
@@ -103,7 +103,7 @@ public class GraphDeltaClientShould
     [Fact]
     public async Task PropagateNonRateLimitExceptionsImmediately()
     {
-        // Arrange
+
         var accountEmail = "test@example.com";
 
         _graphAdapter.GetDeltaAsync(accountEmail, null, Arg.Any<CancellationToken>())
@@ -117,7 +117,7 @@ public class GraphDeltaClientShould
     [Fact]
     public async Task RespectCancellationTokenDuringRetry()
     {
-        // Arrange
+
         var accountEmail = "test@example.com";
         var cts = new CancellationTokenSource();
 

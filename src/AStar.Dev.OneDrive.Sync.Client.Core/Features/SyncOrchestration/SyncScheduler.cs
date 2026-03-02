@@ -7,30 +7,14 @@ using Models;
 /// <summary>
 /// Scheduler responsible for cadence enforcement and startup auto-sync queueing.
 /// </summary>
-public class SyncScheduler
+public class SyncScheduler(IAccountRepository accountRepository, ISyncOrchestrator orchestrator, TimeProvider timeProvider)
 {
-    private readonly IAccountRepository _accountRepository;
-    private readonly ISyncOrchestrator _orchestrator;
-    private readonly TimeProvider _timeProvider;
+    private readonly IAccountRepository _accountRepository = accountRepository;
+    private readonly ISyncOrchestrator _orchestrator = orchestrator;
+    private readonly TimeProvider _timeProvider = timeProvider;
 
     private static readonly TimeSpan PrimaryCadence = TimeSpan.FromMinutes(15);
     private static readonly TimeSpan SecondaryCadence = TimeSpan.FromHours(1);
-
-    /// <summary>
-    /// Initializes a new instance of the <see cref="SyncScheduler"/> class.
-    /// </summary>
-    /// <param name="accountRepository">Repository for account access.</param>
-    /// <param name="orchestrator">Orchestrator for queuing accounts.</param>
-    /// <param name="timeProvider">Time provider for cadence calculations.</param>
-    public SyncScheduler(
-        IAccountRepository accountRepository,
-        ISyncOrchestrator orchestrator,
-        TimeProvider timeProvider)
-    {
-        _accountRepository = accountRepository;
-        _orchestrator = orchestrator;
-        _timeProvider = timeProvider;
-    }
 
     /// <summary>
     /// Starts the scheduler and enqueues all auto-sync-enabled accounts.

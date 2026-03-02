@@ -31,7 +31,7 @@ public class SyncSchedulerShould
     [Fact]
     public async Task EnqueueAutoSyncAccountsAtStartup()
     {
-        // Arrange
+
         var primaryAccount = new SyncAccount
         {
             Email = "primary@example.com",
@@ -50,10 +50,10 @@ public class SyncSchedulerShould
         _accountRepository.GetAllAsync(Arg.Any<CancellationToken>())
             .Returns([primaryAccount, secondaryAccount]);
 
-        // Act
+
         await _scheduler.StartAsync(CancellationToken.None);
 
-        // Assert
+
         await _orchestrator.Received(1).EnqueueAccountAsync(
             Arg.Is<AccountId>(id => id.Email == "primary@example.com"),
             Arg.Any<CancellationToken>());
@@ -65,7 +65,7 @@ public class SyncSchedulerShould
     [Fact]
     public async Task NotEnqueueAccountsWithoutAutoSync()
     {
-        // Arrange
+
         var account = new SyncAccount
         {
             Email = "manual@example.com",
@@ -77,10 +77,10 @@ public class SyncSchedulerShould
         _accountRepository.GetAllAsync(Arg.Any<CancellationToken>())
             .Returns([account]);
 
-        // Act
+
         await _scheduler.StartAsync(CancellationToken.None);
 
-        // Assert
+
         await _orchestrator.DidNotReceive().EnqueueAccountAsync(
             Arg.Any<AccountId>(),
             Arg.Any<CancellationToken>());
@@ -89,7 +89,7 @@ public class SyncSchedulerShould
     [Fact]
     public async Task RejectPrimaryAccountSyncWithin15Minutes()
     {
-        // Arrange
+
         var lastSync = _timeProvider.GetUtcNow().AddMinutes(-10);
         var account = new SyncAccount
         {
@@ -103,10 +103,10 @@ public class SyncSchedulerShould
             Arg.Any<CancellationToken>())
             .Returns(account);
 
-        // Act
+
         var result = await _scheduler.CanSyncAccountAsync(new AccountId("primary@example.com"), CancellationToken.None);
 
-        // Assert
+
         result.IsEligible.ShouldBeFalse();
         result.Reason.ShouldBe(IneligibilityReason.CadenceWindowNotMet);
     }
@@ -114,7 +114,7 @@ public class SyncSchedulerShould
     [Fact]
     public async Task AllowPrimaryAccountSyncAfter15Minutes()
     {
-        // Arrange
+
         var lastSync = _timeProvider.GetUtcNow().AddMinutes(-16);
         var account = new SyncAccount
         {
@@ -128,17 +128,17 @@ public class SyncSchedulerShould
             Arg.Any<CancellationToken>())
             .Returns(account);
 
-        // Act
+
         var result = await _scheduler.CanSyncAccountAsync(new AccountId("primary@example.com"), CancellationToken.None);
 
-        // Assert
+
         result.IsEligible.ShouldBeTrue();
     }
 
     [Fact]
     public async Task RejectSecondaryAccountSyncWithin1Hour()
     {
-        // Arrange
+
         var lastSync = _timeProvider.GetUtcNow().AddMinutes(-30);
         var account = new SyncAccount
         {
@@ -152,10 +152,10 @@ public class SyncSchedulerShould
             Arg.Any<CancellationToken>())
             .Returns(account);
 
-        // Act
+
         var result = await _scheduler.CanSyncAccountAsync(new AccountId("secondary@example.com"), CancellationToken.None);
 
-        // Assert
+
         result.IsEligible.ShouldBeFalse();
         result.Reason.ShouldBe(IneligibilityReason.CadenceWindowNotMet);
     }
@@ -163,7 +163,7 @@ public class SyncSchedulerShould
     [Fact]
     public async Task AllowSecondaryAccountSyncAfter1Hour()
     {
-        // Arrange
+
         var lastSync = _timeProvider.GetUtcNow().AddMinutes(-61);
         var account = new SyncAccount
         {
@@ -177,17 +177,17 @@ public class SyncSchedulerShould
             Arg.Any<CancellationToken>())
             .Returns(account);
 
-        // Act
+
         var result = await _scheduler.CanSyncAccountAsync(new AccountId("secondary@example.com"), CancellationToken.None);
 
-        // Assert
+
         result.IsEligible.ShouldBeTrue();
     }
 
     [Fact]
     public async Task AllowFirstSyncForAccountWithNoHistory()
     {
-        // Arrange
+
         var account = new SyncAccount
         {
             Email = "new@example.com",
@@ -200,26 +200,26 @@ public class SyncSchedulerShould
             Arg.Any<CancellationToken>())
             .Returns(account);
 
-        // Act
+
         var result = await _scheduler.CanSyncAccountAsync(new AccountId("new@example.com"), CancellationToken.None);
 
-        // Assert
+
         result.IsEligible.ShouldBeTrue();
     }
 
     [Fact]
     public async Task RejectSyncForNonExistentAccount()
     {
-        // Arrange
+
         _accountRepository.GetByEmailAsync(
             Arg.Any<AccountId>(),
             Arg.Any<CancellationToken>())
             .Returns((SyncAccount?)null);
 
-        // Act
+
         var result = await _scheduler.CanSyncAccountAsync(new AccountId("unknown@example.com"), CancellationToken.None);
 
-        // Assert
+
         result.IsEligible.ShouldBeFalse();
         result.Reason.ShouldBe(IneligibilityReason.AccountNotFound);
     }

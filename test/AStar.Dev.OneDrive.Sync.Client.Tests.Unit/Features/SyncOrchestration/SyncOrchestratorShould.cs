@@ -26,7 +26,7 @@ public class SyncOrchestratorShould
     [Fact]
     public async Task ExecuteOnlyOneAccountAtATime()
     {
-        // Arrange
+
         var account1 = new SyncAccount { Email = "account1@example.com" };
         var account2 = new SyncAccount { Email = "account2@example.com" };
 
@@ -49,7 +49,7 @@ public class SyncOrchestratorShould
         _syncExecutor.ExecuteSyncAsync(account2, Arg.Any<CancellationToken>())
             .Returns(SyncResult.Success);
 
-        // Act
+
         await _orchestrator.EnqueueAccountAsync(new AccountId("account1@example.com"), CancellationToken.None);
         await _orchestrator.EnqueueAccountAsync(new AccountId("account2@example.com"), CancellationToken.None);
 
@@ -58,7 +58,7 @@ public class SyncOrchestratorShould
         // Wait for first sync to start
         await firstSyncStarted.Task;
 
-        // Assert - second sync should not have been called yet
+
         await _syncExecutor.Received(1).ExecuteSyncAsync(account1, Arg.Any<CancellationToken>());
         await _syncExecutor.DidNotReceive().ExecuteSyncAsync(account2, Arg.Any<CancellationToken>());
 
@@ -66,14 +66,14 @@ public class SyncOrchestratorShould
         firstSyncCanComplete.SetResult(true);
         await Task.Delay(100); // Allow time for second sync to execute
 
-        // Assert - second sync should now have been called
+
         await _syncExecutor.Received(1).ExecuteSyncAsync(account2, Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task UpdateAccountStatusDuringSync()
     {
-        // Arrange
+
         var account = new SyncAccount { Email = "test@example.com" };
         _accountRepository.GetByEmailAsync(Arg.Any<AccountId>(), Arg.Any<CancellationToken>())
             .Returns(account);
@@ -81,18 +81,18 @@ public class SyncOrchestratorShould
         _syncExecutor.ExecuteSyncAsync(Arg.Any<SyncAccount>(), Arg.Any<CancellationToken>())
             .Returns(SyncResult.Success);
 
-        // Act
+
         await _orchestrator.EnqueueAccountAsync(new AccountId("test@example.com"), CancellationToken.None);
         var status = _orchestrator.GetAccountStatus(new AccountId("test@example.com"));
 
-        // Assert
+
         status.State.ShouldBe(SyncState.Queued);
     }
 
     [Fact]
     public async Task MarkAccountAsCompletedAfterSuccessfulSync()
     {
-        // Arrange
+
         var account = new SyncAccount { Email = "test@example.com" };
         _accountRepository.GetByEmailAsync(Arg.Any<AccountId>(), Arg.Any<CancellationToken>())
             .Returns(account);
@@ -100,20 +100,20 @@ public class SyncOrchestratorShould
         _syncExecutor.ExecuteSyncAsync(Arg.Any<SyncAccount>(), Arg.Any<CancellationToken>())
             .Returns(SyncResult.Success);
 
-        // Act
+
         await _orchestrator.EnqueueAccountAsync(new AccountId("test@example.com"), CancellationToken.None);
         await _orchestrator.ProcessQueueAsync(CancellationToken.None);
 
         var status = _orchestrator.GetAccountStatus(new AccountId("test@example.com"));
 
-        // Assert
+
         status.State.ShouldBe(SyncState.Idle);
     }
 
     [Fact]
     public async Task HandleSyncFailuresGracefully()
     {
-        // Arrange
+
         var account = new SyncAccount { Email = "failing@example.com" };
         _accountRepository.GetByEmailAsync(Arg.Any<AccountId>(), Arg.Any<CancellationToken>())
             .Returns(account);
@@ -121,13 +121,13 @@ public class SyncOrchestratorShould
         _syncExecutor.ExecuteSyncAsync(Arg.Any<SyncAccount>(), Arg.Any<CancellationToken>())
             .Returns(SyncResult.Failed("Network error"));
 
-        // Act
+
         await _orchestrator.EnqueueAccountAsync(new AccountId("failing@example.com"), CancellationToken.None);
         await _orchestrator.ProcessQueueAsync(CancellationToken.None);
 
         var status = _orchestrator.GetAccountStatus(new AccountId("failing@example.com"));
 
-        // Assert
+
         status.State.ShouldBe(SyncState.Failed);
         status.ErrorMessage.ShouldBe("Network error");
     }
@@ -135,28 +135,28 @@ public class SyncOrchestratorShould
     [Fact]
     public void ReportIdleStatusForAccountNotInQueue()
     {
-        // Act
+
         var status = _orchestrator.GetAccountStatus(new AccountId("unknown@example.com"));
 
-        // Assert
+
         status.State.ShouldBe(SyncState.Idle);
     }
 
     [Fact]
     public async Task NotEnqueueSameAccountTwice()
     {
-        // Arrange
+
         var account = new SyncAccount { Email = "test@example.com" };
         _accountRepository.GetByEmailAsync(Arg.Any<AccountId>(), Arg.Any<CancellationToken>())
             .Returns(account);
 
-        // Act
+
         await _orchestrator.EnqueueAccountAsync(new AccountId("test@example.com"), CancellationToken.None);
         await _orchestrator.EnqueueAccountAsync(new AccountId("test@example.com"), CancellationToken.None);
 
         var status = _orchestrator.GetAccountStatus(new AccountId("test@example.com"));
 
-        // Assert - should only be queued once
+
         status.State.ShouldBe(SyncState.Queued);
     }
 }

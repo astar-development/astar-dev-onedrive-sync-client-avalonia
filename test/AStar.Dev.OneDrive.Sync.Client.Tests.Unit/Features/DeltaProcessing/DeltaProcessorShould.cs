@@ -25,7 +25,7 @@ public class DeltaProcessorShould
     [Fact]
     public async Task CaptureInitialDeltaTokenOnFirstRun()
     {
-        // Arrange
+
         var account = new SyncAccount { Email = "test@example.com" };
         var deltaResponse = new DeltaResponse
         {
@@ -36,10 +36,10 @@ public class DeltaProcessorShould
         _graphClient.GetInitialDeltaAsync(account.Email, Arg.Any<CancellationToken>())
             .Returns(deltaResponse);
 
-        // Act
+
         await _processor.ProcessInitialDiscoveryAsync(account, CancellationToken.None);
 
-        // Assert
+
         await _driveItemRepository.Received(1).SaveDeltaTokenAsync(
             account.Email,
             "abc123",
@@ -49,7 +49,7 @@ public class DeltaProcessorShould
     [Fact]
     public async Task ProcessIncrementalDeltaUsingStoredToken()
     {
-        // Arrange
+
         var account = new SyncAccount { Email = "test@example.com" };
         var storedToken = "previousToken";
         var deltaResponse = new DeltaResponse
@@ -64,10 +64,10 @@ public class DeltaProcessorShould
         _graphClient.GetDeltaChangesAsync(account.Email, storedToken, Arg.Any<CancellationToken>())
             .Returns(deltaResponse);
 
-        // Act
+
         await _processor.ProcessIncrementalSyncAsync(account, CancellationToken.None);
 
-        // Assert
+
         await _driveItemRepository.Received(1).SaveDeltaTokenAsync(
             account.Email,
             "newToken",
@@ -77,7 +77,7 @@ public class DeltaProcessorShould
     [Fact]
     public async Task DeduplicateItemsWithinBatchUsingLastModified()
     {
-        // Arrange
+
         var account = new SyncAccount { Email = "test@example.com" };
         var olderTime = new DateTimeOffset(2026, 3, 1, 10, 0, 0, TimeSpan.Zero);
         var newerTime = new DateTimeOffset(2026, 3, 1, 11, 0, 0, TimeSpan.Zero);
@@ -98,10 +98,10 @@ public class DeltaProcessorShould
         _graphClient.GetDeltaChangesAsync(account.Email, "oldToken", Arg.Any<CancellationToken>())
             .Returns(deltaResponse);
 
-        // Act
+
         await _processor.ProcessIncrementalSyncAsync(account, CancellationToken.None);
 
-        // Assert - should only persist the newer item
+
         await _driveItemRepository.Received(1).SaveBatchAsync(
             account.Email,
             Arg.Is<IReadOnlyList<DriveItemDto>>(items =>
@@ -115,7 +115,7 @@ public class DeltaProcessorShould
     [Fact]
     public async Task UseLexicalItemIdAsTieBreakerForDuplicatesWithSameTimestamp()
     {
-        // Arrange
+
         var account = new SyncAccount { Email = "test@example.com" };
         var sameTime = new DateTimeOffset(2026, 3, 1, 10, 0, 0, TimeSpan.Zero);
 
@@ -135,10 +135,10 @@ public class DeltaProcessorShould
         _graphClient.GetDeltaChangesAsync(account.Email, "oldToken", Arg.Any<CancellationToken>())
             .Returns(deltaResponse);
 
-        // Act
+
         await _processor.ProcessIncrementalSyncAsync(account, CancellationToken.None);
 
-        // Assert - should keep both since they have different IDs (not true duplicates)
+
         // This test actually verifies that we only dedupe SAME items, not different items
         await _driveItemRepository.Received(1).SaveBatchAsync(
             account.Email,
@@ -149,7 +149,7 @@ public class DeltaProcessorShould
     [Fact]
     public async Task PersistItemsInBatchesOf50()
     {
-        // Arrange
+
         var account = new SyncAccount { Email = "test@example.com" };
         var items = Enumerable.Range(1, 120)
             .Select(i => new DriveItemDto
@@ -172,10 +172,10 @@ public class DeltaProcessorShould
         _graphClient.GetDeltaChangesAsync(account.Email, "oldToken", Arg.Any<CancellationToken>())
             .Returns(deltaResponse);
 
-        // Act
+
         await _processor.ProcessIncrementalSyncAsync(account, CancellationToken.None);
 
-        // Assert - should receive 3 batches: 50 + 50 + 20
+
         await _driveItemRepository.Received(1).SaveBatchAsync(
             account.Email,
             Arg.Is<IReadOnlyList<DriveItemDto>>(batch => batch.Count == 50),
@@ -190,7 +190,7 @@ public class DeltaProcessorShould
     [Fact]
     public async Task AdvanceDeltaTokenAtomicallyWithBatchCommit()
     {
-        // Arrange
+
         var account = new SyncAccount { Email = "test@example.com" };
         var deltaResponse = new DeltaResponse
         {
@@ -214,17 +214,17 @@ public class DeltaProcessorShould
             .Returns(Task.CompletedTask)
             .AndDoes(_ => saveOrder.Add("token"));
 
-        // Act
+
         await _processor.ProcessIncrementalSyncAsync(account, CancellationToken.None);
 
-        // Assert - token should be saved after batch
+
         saveOrder.ShouldBe(["batch", "token"]);
     }
 
     [Fact]
     public async Task NotAdvanceTokenIfBatchPersistenceFails()
     {
-        // Arrange
+
         var account = new SyncAccount { Email = "test@example.com" };
         var deltaResponse = new DeltaResponse
         {
