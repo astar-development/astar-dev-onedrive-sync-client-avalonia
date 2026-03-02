@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AStar.Dev.OneDrive.Sync.Client.Core/AStar.Dev.OneDrive.Sync.Client.Core.csproj" />
+    <Project Path="src/AStar.Dev.OneDrive.Sync.Client.Desktop/AStar.Dev.OneDrive.Sync.Client.Desktop.csproj" />
+    <Project Path="src/AStar.Dev.OneDrive.Sync.Client.Infrastructure/AStar.Dev.OneDrive.Sync.Client.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/test/">
+    <Project Path="test/AStar.Dev.OneDrive.Sync.Client.Tests.Integration/AStar.Dev.OneDrive.Sync.Client.Tests.Integration.csproj" />
+    <Project Path="test/AStar.Dev.OneDrive.Sync.Client.Tests.Unit/AStar.Dev.OneDrive.Sync.Client.Tests.Unit.csproj" />
+  </Folder>
+</Solution>
