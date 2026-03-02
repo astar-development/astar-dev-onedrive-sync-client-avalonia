@@ -6,6 +6,16 @@ namespace AStar.Dev.OneDrive.Sync.Client.Core.Features.SyncOrchestration.Models;
 public abstract record SyncResult
 {
     /// <summary>
+    /// Gets a value indicating whether the sync was successful.
+    /// </summary>
+    public abstract bool IsSuccess { get; }
+
+    /// <summary>
+    /// Gets the error message if the sync failed; otherwise null.
+    /// </summary>
+    public abstract string? ErrorMessage { get; }
+
+    /// <summary>
     /// Indicates a successful sync execution.
     /// </summary>
     public static SyncResult Success
@@ -18,7 +28,21 @@ public abstract record SyncResult
     public static SyncResult Failed(string errorMessage)
         => new FailureResult(errorMessage);
 
-    private record SuccessResult() : SyncResult;
+    private sealed record SuccessResult() : SyncResult
+    {
+        public override bool IsSuccess
+            => true;
 
-    private record FailureResult(string ErrorMessage) : SyncResult;
+        public override string? ErrorMessage
+            => null;
+    }
+
+    private sealed record FailureResult(string Error) : SyncResult
+    {
+        public override bool IsSuccess
+            => false;
+
+        public override string? ErrorMessage
+            => Error;
+    }
 }

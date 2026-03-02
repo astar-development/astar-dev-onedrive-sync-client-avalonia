@@ -68,15 +68,9 @@ public class SyncOrchestrator : ISyncOrchestrator
 
                 var result = await _syncExecutor.ExecuteSyncAsync(account, cancellationToken);
 
-                _statusMap[accountId.Email] = result switch
-                {
-                    { } success when IsSuccess(result)
-                        => new AccountSyncStatus(accountId, SyncState.Idle),
-                    _ => new AccountSyncStatus(
-                        accountId, 
-                        SyncState.Failed, 
-                        GetErrorMessage(result))
-                };
+                _statusMap[accountId.Email] = result.IsSuccess
+                    ? new AccountSyncStatus(accountId, SyncState.Idle)
+                    : new AccountSyncStatus(accountId, SyncState.Failed, result.ErrorMessage);
             }
             finally
             {
@@ -90,15 +84,4 @@ public class SyncOrchestrator : ISyncOrchestrator
         => _statusMap.TryGetValue(accountId.Email, out var status)
             ? status
             : new AccountSyncStatus(accountId, SyncState.Idle);
-
-    private static bool IsSuccess(SyncResult result)
-        => result == SyncResult.Success;
-
-    private static string GetErrorMessage(SyncResult result)
-        => result switch
-        {
-            _ when result.GetType().GetProperty("ErrorMessage") is { } prop 
-                => prop.GetValue(result) as string ?? "Unknown error",
-            _ => "Unknown error"
-        };
 }
