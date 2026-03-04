@@ -21,6 +21,12 @@ public class SyncAccount
     public bool IsPrimary { get; set; }
 
     /// <summary>
+    /// Gets or sets whether automatic sync is enabled for this account at application startup.
+    /// Accounts with AutoSyncEnabled=true are queued for sync when the application starts.
+    /// </summary>
+    public bool AutoSyncEnabled { get; set; }
+
+    /// <summary>
     /// Gets or sets the UTC time when this account was added to the system.
     /// </summary>
     public DateTimeOffset AddedAtUtc { get; set; }
